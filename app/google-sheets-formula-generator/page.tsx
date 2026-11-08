@@ -3,15 +3,8 @@ import AdSlot from "@/components/AdSlot";
 import PageHeader from "@/components/PageHeader";
 import TutorialsCta from "@/components/TutorialsCta";
 import SeoMeta from "@/components/SeoMeta";
-import { parseDeepLinkParams } from "@/lib/deepLink";
 
-type PageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
-
-export default async function GoogleSheetsGeneratorPage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const deep = parseDeepLinkParams(params);
+export default function GoogleSheetsGeneratorPage() {
   return (
     <div className="py-6">
       <SeoMeta
@@ -25,14 +18,7 @@ export default async function GoogleSheetsGeneratorPage({ searchParams }: PagePr
             title={{ en: "Google Sheets Formula Generator", zh: "Google 表格公式生成器" }}
             subtitle={{ en: "Choose a task, enter ranges, and copy a Google Sheets formula instantly. No login required.", zh: "选择任务并填写区域，即可复制 Google 表格公式。无需登录。" }}
           />
-          <FormulaGenerator
-            initialTask={deep.task}
-            initialValues={deep.values}
-            initialPlatform="google_sheets"
-            initialExcelVersion={deep.excelVersion}
-            initialSeparator={deep.separator}
-            autoGenerate={deep.hasParams}
-          />
+          <FormulaGenerator initialPlatform="google_sheets" />
           <TutorialsCta />
           <AdSlot className="my-8" />
           <AdSlot className="mb-8" />

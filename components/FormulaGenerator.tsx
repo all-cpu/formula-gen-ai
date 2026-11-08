@@ -38,6 +38,7 @@ import {
   type SavedFormula,
   type SavedFormulaDraft,
 } from "@/lib/savedFormulas";
+import { parseDeepLinkParams } from "@/lib/deepLink";
 
 type ToastKind = "copied" | "saved" | "removed" | "limit" | "storage";
 
@@ -220,6 +221,62 @@ export default function FormulaGenerator({
       }
     } catch {
       // localStorage unavailable; keep default false.
+    }
+  }, []);
+
+  // Client-only deep link: restore ?task=... (and optional field values)
+  // after hydration. The server no longer reads searchParams under static
+  // export, so the generator reads the URL itself in the browser.
+  useEffect(() => {
+    try {
+      const query = window.location.search;
+      if (!query) return;
+      const urlParams = new URLSearchParams(query);
+      if (!urlParams.has("task")) return;
+      const record: Record<string, string> = {};
+      urlParams.forEach((value, key) => {
+        record[key] = value;
+      });
+      const deep = parseDeepLinkParams(record);
+      const nextValues = { ...getDefaultValues(deep.task), ...deep.values };
+      setTask(deep.task);
+      setValues(nextValues);
+      setExcelVersion(deep.excelVersion);
+      setArgumentSeparator(deep.separator);
+
+      if (deep.hasParams) {
+        const filled = getFormulaTask(deep.task)
+          .fields.filter((field) => field.required)
+          .every((field) => {
+            const value = nextValues[field.key] ?? "";
+            return field.key === "delimiter"
+              ? value !== ""
+              : value.trim() !== "";
+          });
+        if (!filled) return;
+        const generated = buildFormula({
+          task: deep.task,
+          values: nextValues,
+          platform,
+          excelVersion: deep.excelVersion,
+          lang: language,
+          argumentSeparator: deep.separator,
+        });
+        setLastGeneratedDraft({
+          formula: generated.formula,
+          task: deep.task,
+          values: { ...nextValues },
+          platform,
+          excelVersion: deep.excelVersion,
+          separator: deep.separator,
+        });
+        setResult(generated);
+        if (generated.clarification) {
+          setError(generated.clarification[language]);
+        }
+      }
+    } catch {
+      // Malformed query or storage issue; fall back to default task silently.
     }
   }, []);
 
